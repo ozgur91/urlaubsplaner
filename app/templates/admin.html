@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% block title %}Admin — Urlaubsplaner{% endblock %}
+{% block content %}
+<div class="page-eyebrow">Urlaubsplanung · Administration</div>
+<div class="page-title-row">
+  <div>
+    <h1>Teams &amp; Verwaltung</h1>
+    <p class="page-subtitle">Organisiere Teams und Teamleitungen, verwalte Benutzerrollen und pflege die verfügbaren Abwesenheitsarten.</p>
+  </div>
+</div>
+
+<h2>Teams</h2>
+<div class="team-cards">
+  {% for team in teams %}
+  <div class="team-card accent-{{ loop.index0 % 4 }}">
+    <div class="team-card-header">
+      <h3>{{ team.name }}</h3>
+    </div>
+    <div class="team-card-count">{{ team.members|length }} Mitglied{{ "er" if team.members|length != 1 else "" }}</div>
+    {% for m in team.members %}
+    <div class="team-member-row">
+      <span class="avatar-chip av-{{ loop.index0 % 4 }}">{{ m.display_name[0] }}</span>
+      <span class="team-member-name">{{ m.display_name }}<br><span class="team-member-role">{{ m.role|role_label }}</span></span>
+      <a href="#benutzer">Bearbeiten</a>
+    </div>
+    {% else %}
+    <p class="day-panel-empty" style="padding:0;">Noch keine Mitglieder.</p>
+    {% endfor %}
+    <div class="team-lead-select">
+      <form method="post" action="/admin/teams/{{ team.id }}/team-lead">
+        <label for="lead-{{ team.id }}">Teamleitung</label>
+        <select id="lead-{{ team.id }}" name="team_lead_id" onchange="this.form.submit()">
+          <option value="">— keine —</option>
+          {% for u in users %}
+          <option value="{{ u.id }}" {% if team.team_lead_id == u.id %}selected{% endif %}>{{ u.display_name }}</option>
+          {% endfor %}
+        </select>
+      </form>
+    </div>
+  </div>
+  {% else %}
+  <div class="card" style="padding:20px;"><p style="margin:0;">Noch keine Teams vorhanden.</p></div>
+  {% endfor %}
+</div>
+<form method="post" action="/admin/teams" class="inline-form">
+  <input type="text" name="name" placeholder="Neuer Teamname" required>
+  <button type="submit" class="button-small">Team hinzufügen</button>
+</form>
+
+<h2 id="benutzer">Benutzer</h2>
+<div class="card">
+<table class="list-table">
+  <thead><tr><th>Name</th><th>E-Mail</th><th>Rolle</th><th>Team</th><th>Aktiv</th></tr></thead>
+  <tbody>
+    {% for u in users %}
+    <tr>
+      <td>{{ u.display_name }}{% if u.job_title %} <small>({{ u.job_title }})</small>{% endif %}</td>
+      <td>{{ u.email }}</td>
+      <td>
+        <form method="post" action="/admin/users/{{ u.id }}/role" class="inline-form">
+          <select name="role" onchange="this.form.submit()">
+            {% for r in roles %}
+            <option value="{{ r.value }}" {% if u.role == r %}selected{% endif %}>{{ role_labels[r] }}</option>
+            {% endfor %}
+          </select>
+        </form>
+      </td>
+      <td>
+        <form method="post" action="/admin/users/{{ u.id }}/team" class="inline-form">
+          <select name="team_id" onchange="this.form.submit()">
+            <option value="">— keins —</option>
+            {% for team in teams %}
+            <option value="{{ team.id }}" {% if u.team_id == team.id %}selected{% endif %}>{{ team.name }}</option>
+            {% endfor %}
+          </select>
+        </form>
+      </td>
+      <td>
+        <form method="post" action="/admin/users/{{ u.id }}/active" class="inline-form">
+          <input type="hidden" name="is_active" value="{{ 'false' if u.is_active else 'true' }}">
+          <button type="submit" class="button-small {% if u.is_active %}button-danger{% endif %}">
+            {{ "Deaktivieren" if u.is_active else "Aktivieren" }}
+          </button>
+        </form>
+      </td>
+    </tr>
+    {% else %}
+    <tr><td colspan="5">Noch keine Benutzer vorhanden.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+
+<h2>Abwesenheitsarten</h2>
+<div class="card">
+<table class="list-table">
+  <thead><tr><th>Name</th><th>Aktiv</th></tr></thead>
+  <tbody>
+    {% for lt in leave_types %}
+    <tr>
+      <td>{{ lt.name }}</td>
+      <td>
+        <form method="post" action="/admin/leave-types/{{ lt.id }}/active" class="inline-form">
+          <input type="hidden" name="is_active" value="{{ 'false' if lt.is_active else 'true' }}">
+          <button type="submit" class="button-small {% if lt.is_active %}button-danger{% endif %}">
+            {{ "Deaktivieren" if lt.is_active else "Aktivieren" }}
+          </button>
+        </form>
+      </td>
+    </tr>
+    {% else %}
+    <tr><td colspan="2">Noch keine Abwesenheitsarten vorhanden.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+<form method="post" action="/admin/leave-types" class="inline-form">
+  <input type="text" name="name" placeholder="Neue Abwesenheitsart" required>
+  <button type="submit" class="button-small">Hinzufügen</button>
+</form>
+{% endblock %}

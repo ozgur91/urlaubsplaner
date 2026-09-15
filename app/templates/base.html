@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0f2b23">
+  <title>{% block title %}Urlaubsplaner{% endblock %}</title>
+  <script src="https://unpkg.com/htmx.org@2.0.3"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+  {% if user %}
+  <header class="topbar">
+    <div class="topbar-left">
+      <span class="brand-mark">u.</span>
+      <span class="brand-block">
+        <span class="brand-name">Urlaubsplaner</span>
+        <span class="brand-tagline">Team-Urlaub gemeinsam planen</span>
+      </span>
+    </div>
+    <div class="topbar-right">
+      <span class="context-block">
+        <span class="context-title">{{ user.team.name if user.team else "Urlaubsplanung" }}</span>
+        <span class="context-sub">{{ user.role|role_label }}</span>
+      </span>
+      <a href="/auth/logout" class="logout-link">Abmelden</a>
+    </div>
+  </header>
+  <nav class="tabbar">
+    <a href="/" class="{% if request.url.path == '/' %}active{% endif %}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4.5" width="18" height="16" rx="2.5"/><path d="M3 9.5h18M8 3v3M16 3v3"/></svg>
+      Kalender
+    </a>
+    <a href="/requests" class="{% if request.url.path.startswith('/requests') %}active{% endif %}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 3.5h7l4 4V20a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4.5a1 1 0 0 1 1-1Z"/><path d="M14 3.5V8h4M9 12.5h6M9 16h6"/></svg>
+      Meine Anträge
+    </a>
+    {% if user.role.value in ("teamlead", "head_of") %}
+    <a href="/approvals" class="{% if request.url.path.startswith('/approvals') %}active{% endif %}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m4 12.5 5 5 11-11"/></svg>
+      Genehmigungen
+    </a>
+    {% endif %}
+    {% if user.role.value == "admin" %}
+    <a href="/admin" class="{% if request.url.path.startswith('/admin') %}active{% endif %}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.32 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>
+      Admin
+    </a>
+    {% endif %}
+  </nav>
+  <main class="content">
+    {% block content %}{% endblock %}
+  </main>
+  {% else %}
+  {% block bare_content %}{% endblock %}
+  {% endif %}
+</body>
+</html>

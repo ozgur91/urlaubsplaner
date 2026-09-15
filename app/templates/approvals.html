@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}Genehmigungen — Urlaubsplaner{% endblock %}
+{% block content %}
+<div class="page-eyebrow">Urlaubsplanung</div>
+<div class="page-title-row">
+  <div>
+    <h1>Genehmigungen</h1>
+    <p class="page-subtitle">Entscheide über ausstehende Anträge und behalte genehmigte Abwesenheiten im Blick.</p>
+  </div>
+</div>
+
+<h2>Ausstehende Anträge</h2>
+<div class="card">
+<table class="list-table">
+  <thead>
+    <tr>
+      <th>Mitarbeiter:in</th>
+      <th>Art</th>
+      <th>Von</th>
+      <th>Bis</th>
+      <th>Notiz</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for r in pending %}
+    <tr>
+      <td>{{ r.employee.display_name }} <small>({{ r.employee.role|role_label }})</small></td>
+      <td>{{ r.leave_type.name }}</td>
+      <td>{{ r.start_date }}</td>
+      <td>{{ r.end_date }}</td>
+      <td>
+        {{ r.note or "" }}
+        {% if r.id in overlaps %}
+        <div class="warning">
+          ⚠ Überschneidung mit: {% for c in overlaps[r.id] %}{{ c.employee.display_name }} ({{ c.start_date }}–{{ c.end_date }}){% if not loop.last %}, {% endif %}{% endfor %}
+        </div>
+        {% endif %}
+      </td>
+      <td class="actions">
+        <form method="post" action="/approvals/{{ r.id }}/approve">
+          <button type="submit" class="button-small">Genehmigen</button>
+        </form>
+        <form method="post" action="/approvals/{{ r.id }}/reject">
+          <button type="submit" class="button-small button-danger">Ablehnen</button>
+        </form>
+      </td>
+    </tr>
+    {% else %}
+    <tr><td colspan="6">Keine ausstehenden Anträge.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+
+<h2>Genehmigt</h2>
+<div class="card">
+<table class="list-table">
+  <thead>
+    <tr>
+      <th>Mitarbeiter:in</th>
+      <th>Art</th>
+      <th>Von</th>
+      <th>Bis</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for r in approved %}
+    <tr>
+      <td>{{ r.employee.display_name }} <small>({{ r.employee.role|role_label }})</small></td>
+      <td>{{ r.leave_type.name }}</td>
+      <td>{{ r.start_date }}</td>
+      <td>{{ r.end_date }}</td>
+      <td class="actions">
+        <form method="post" action="/approvals/{{ r.id }}/revoke" onsubmit="return confirm('Diesen genehmigten Antrag widerrufen?');">
+          <button type="submit" class="button-small button-danger">Widerrufen</button>
+        </form>
+      </td>
+    </tr>
+    {% else %}
+    <tr><td colspan="5">Keine genehmigten Anträge.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Dev-Login — Urlaubsplaner{% endblock %}
+{% block bare_content %}
+<main class="login-page">
+  <div class="login-card">
+    <div class="login-logo">U</div>
+    <h1>Urlaubsplaner</h1>
+    <p class="dev-warning">Testmodus: kein Passwort, wähle einen Benutzer zum Anmelden.</p>
+    <ul class="dev-user-list">
+      {% for u in users %}
+      <li>
+        <form method="post" action="/auth/dev-login/{{ u.id }}">
+          <button type="submit" class="dev-user-button">
+            <span class="dev-user-avatar">{{ u.display_name[0] }}</span>
+            <span class="dev-user-text">
+              <span class="dev-user-name">{{ u.display_name }}</span>
+              <span class="dev-user-meta">{{ u.role|role_label }}{% if u.team %} · {{ u.team.name }}{% endif %}</span>
+            </span>
+          </button>
+        </form>
+      </li>
+      {% else %}
+      <li>Noch keine Benutzer vorhanden.</li>
+      {% endfor %}
+    </ul>
+  </div>
+</main>
+{% endblock %}

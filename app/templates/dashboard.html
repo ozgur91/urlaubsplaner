@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% block title %}Kalender — Urlaubsplaner{% endblock %}
+{% block content %}
+<div class="page-eyebrow">Urlaubsplanung</div>
+<div class="page-title-row">
+  <div>
+    <h1>Urlaubskalender</h1>
+    <p class="page-subtitle">Behalte im Blick, wer im Team wann unterwegs ist, und plane neue Anträge direkt aus dem Kalender.</p>
+  </div>
+  <a class="button" href="/requests">+ Neuer Antrag</a>
+</div>
+
+<div class="stat-cards">
+  <div class="stat-card">
+    <span class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 19c.7-3 3.2-5 6.5-5s5.8 2 6.5 5"/><circle cx="17" cy="8.5" r="2.4"/><path d="M16 14.2c2.6.4 4.4 2.1 5 4.8"/></svg></span>
+    <span>
+      <span class="stat-number">{{ stats.members }}</span>
+      <span class="stat-label">Teammitglieder</span>
+    </span>
+  </div>
+  <div class="stat-card">
+    <span class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m4 12.5 5 5 11-11"/></svg></span>
+    <span>
+      <span class="stat-number">{{ stats.approved_this_month }}</span>
+      <span class="stat-label">Genehmigt (Monat)</span>
+    </span>
+  </div>
+  <div class="stat-card">
+    <span class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg></span>
+    <span>
+      <span class="stat-number">{{ stats.pending_this_month }}</span>
+      <span class="stat-label">Ausstehend (Monat)</span>
+    </span>
+  </div>
+</div>
+
+<div class="calendar-controls">
+  <div class="calendar-nav">
+    <a class="nav-btn" href="/?year={{ prev_year }}&month={{ prev_month }}{% if active_team_id %}&team_id={{ active_team_id }}{% endif %}">‹</a>
+    <h2>{{ month_name }}</h2>
+    <a class="nav-btn" href="/?year={{ next_year }}&month={{ next_month }}{% if active_team_id %}&team_id={{ active_team_id }}{% endif %}">›</a>
+    <a class="today-btn" href="/{% if active_team_id %}?team_id={{ active_team_id }}{% endif %}">Heute</a>
+  </div>
+  {% if teams|length > 1 %}
+  <form method="get">
+    <input type="hidden" name="year" value="{{ year }}">
+    <input type="hidden" name="month" value="{{ month }}">
+    <select name="team_id" onchange="this.form.submit()">
+      {% for team in teams %}
+      <option value="{{ team.id }}" {% if team.id == active_team_id %}selected{% endif %}>{{ team.name }}</option>
+      {% endfor %}
+    </select>
+  </form>
+  {% endif %}
+</div>
+
+{% if not members %}
+<div class="card" style="padding: 20px;">
+  <p style="margin:0;">Keine Teammitglieder vorhanden. {% if user.role.value == "admin" %}<a href="/admin">Teams im Admin-Bereich anlegen.</a>{% endif %}</p>
+</div>
+{% else %}
+<div class="calendar-layout">
+  <div class="month-grid">
+    <div class="weekday-row">
+      {% for label in weekday_labels %}<div>{{ label }}</div>{% endfor %}
+    </div>
+    {% for week in weeks %}
+    <div class="week-row">
+      {% for cell in week %}
+      <div class="day-cell {% if not cell.in_month %}out-of-month{% endif %} {% if cell.is_weekend %}weekend{% endif %} {% if cell.is_holiday %}holiday{% endif %} {% if cell.is_today %}is-today{% endif %} {% if cell.is_selected %}selected{% endif %}">
+        <a class="day-number-link" href="/?year={{ year }}&month={{ month }}&day={{ cell.date.isoformat() }}{% if active_team_id %}&team_id={{ active_team_id }}{% endif %}">{{ cell.date.day }}</a>
+        <div class="day-entries">
+          {% for entry in cell.entries[:4] %}
+          <span class="day-entry lt-{{ color_by_leave_type.get(entry.leave_type_id, 0) }} {% if entry.status.value == 'pending' %}status-pending{% endif %}">
+            <span class="day-entry-name">{{ entry.employee.display_name.split(" ")[0] }}</span>
+            <span class="day-entry-sub">{{ entry.leave_type.name }}</span>
+          </span>
+          {% endfor %}
+          {% if cell.entries|length > 4 %}
+          <span class="day-entry-sub">+{{ cell.entries|length - 4 }} weitere</span>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="day-panel">
+    <div class="day-panel-eyebrow">{{ "Heute" if selected_date == today else "Ausgewählter Tag" }}</div>
+    <div class="day-panel-date">{{ selected_date.strftime("%d.%m.%Y") }}</div>
+    <div class="day-panel-count">{{ selected_entries|length }} Abwesenheit{{ "en" if selected_entries|length != 1 else "" }}</div>
+
+    {% for entry in selected_entries %}
+    <div class="day-panel-entry">
+      <div class="entry-name">{{ entry.employee.display_name }}</div>
+      <span class="badge badge-{{ entry.status.value }}"><span class="dot"></span>{{ entry.leave_type.name }} · {{ entry.status|status_label }}</span>
+      <div class="entry-meta">{{ entry.start_date.strftime("%d.%m.%Y") }} – {{ entry.end_date.strftime("%d.%m.%Y") }}</div>
+      {% if entry.id in decidable_ids or entry.id in cancellable_ids %}
+      <div class="day-panel-actions">
+        {% if entry.id in decidable_ids %}
+        <form method="post" action="/approvals/{{ entry.id }}/approve"><input type="hidden" name="next" value="{{ request.url.path }}?year={{ year }}&month={{ month }}&day={{ selected_date.isoformat() }}{% if active_team_id %}&team_id={{ active_team_id }}{% endif %}"><button type="submit">Genehmigen</button></form>
+        <form method="post" action="/approvals/{{ entry.id }}/reject"><input type="hidden" name="next" value="{{ request.url.path }}?year={{ year }}&month={{ month }}&day={{ selected_date.isoformat() }}{% if active_team_id %}&team_id={{ active_team_id }}{% endif %}"><button type="submit" class="danger">Ablehnen</button></form>
+        {% endif %}
+        {% if entry.id in cancellable_ids %}
+        <form method="post" action="/requests/{{ entry.id }}/cancel" onsubmit="return confirm('Diesen Antrag stornieren?');"><input type="hidden" name="next" value="{{ request.url.path }}?year={{ year }}&month={{ month }}&day={{ selected_date.isoformat() }}{% if active_team_id %}&team_id={{ active_team_id }}{% endif %}"><button type="submit" class="danger">Stornieren</button></form>
+        {% endif %}
+      </div>
+      {% endif %}
+    </div>
+    {% else %}
+    <div class="day-panel-empty">Keine Abwesenheiten an diesem Tag.</div>
+    {% endfor %}
+
+    <hr>
+    <a class="button button-block" href="/requests">+ Neuer Antrag</a>
+  </div>
+</div>
+
+<p class="legend">
+  <span class="legend-item"><span class="legend-swatch pending-demo"></span> Ausstehend gestreift</span>
+  <span class="legend-item"><span class="legend-swatch holiday"></span> Feiertag (NRW)</span>
+  <span class="legend-item"><span class="legend-swatch weekend"></span> Wochenende</span>
+</p>
+{% endif %}
+{% endblock %}

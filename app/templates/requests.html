@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Meine Anträge — Urlaubsplaner{% endblock %}
+{% block content %}
+<div class="page-eyebrow">Urlaubsplanung</div>
+<div class="page-title-row">
+  <div>
+    <h1>Meine Anträge</h1>
+    <p class="page-subtitle">Stelle neue Urlaubsanträge und behalte den Status deiner bisherigen Anträge im Blick.</p>
+  </div>
+  <button class="button" hx-get="/requests/new" hx-target="#form-slot" hx-swap="innerHTML">+ Neuer Antrag</button>
+</div>
+
+<div id="form-slot"></div>
+
+<div class="card">
+<table class="list-table">
+  <thead>
+    <tr>
+      <th>Art</th>
+      <th>Von</th>
+      <th>Bis</th>
+      <th>Status</th>
+      <th>Notiz</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for r in my_requests %}
+    <tr>
+      <td>{{ r.leave_type.name }}</td>
+      <td>{{ r.start_date }}</td>
+      <td>{{ r.end_date }}</td>
+      <td><span class="badge badge-{{ r.status.value }}">{{ r.status|status_label }}</span></td>
+      <td>{{ r.note or "" }}</td>
+      <td>
+        {% if r.status.value in ("pending", "approved") %}
+        <form method="post" action="/requests/{{ r.id }}/cancel" onsubmit="return confirm('Diesen Antrag stornieren?');">
+          <button type="submit" class="button-small">Stornieren</button>
+        </form>
+        {% endif %}
+      </td>
+    </tr>
+    {% else %}
+    <tr><td colspan="6">Noch keine Anträge vorhanden.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

@@ -1,0 +1,19 @@
+<form method="post" action="/requests" class="inline-form card" style="padding: 16px 20px; margin-bottom: 20px;">
+  <label>Art
+    <select name="leave_type_id" required>
+      {% for lt in leave_types %}
+      <option value="{{ lt.id }}">{{ lt.name }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>Von
+    <input type="date" name="start_date" required>
+  </label>
+  <label>Bis
+    <input type="date" name="end_date" required>
+  </label>
+  <label>Notiz
+    <input type="text" name="note" maxlength="500">
+  </label>
+  <button type="submit" class="button">Absenden</button>
+</form>
