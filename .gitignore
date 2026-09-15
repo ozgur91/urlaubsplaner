@@ -4,6 +4,6 @@ __pycache__/
 .env
 *.db
 
-# Local Claude Code settings/credentials - the .claude/skills/ from Spec Kit
-# are shared tooling and should stay committed.
-.claude/settings.local.json
+# Claude Code and Spec Kit local tooling - not shared via the repo.
+.claude/
+.specify/
